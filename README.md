@@ -9,3 +9,11 @@
 | HQ-SRV | 2 | 1 | 10 | «ALT-server» |
 | BR-SRV | 2 | 1 | 10 | «ALT-server» |
 | HQ-CLI | 3 | 2 | 15 | «ALT-workstatison» |
+### EcoRouter
+Установка `EcoRouter`[->](./ecorouter_install/README.md)
+
+### vESR
+1. Установка `vESR`[->](./install_vesr/README.md)
+2. Создаем виртуальные сети.[->](./create_virtual_switch/README.md)
+3. Делаем внеполосное управление.[->](./mgmt/README.md)
+4. Настройка консоли `vESR`.[->](./settings_vesr_console/README.md)
