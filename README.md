@@ -14,6 +14,9 @@
 
 ### vESR
 Установка `vESR`[->](./install_vesr/README.md)
+
 2. Создаем виртуальные сети.[->](./create_virtual_switch/README.md)
-3. Делаем внеполосное управление.[->](./mgmt/README.md)
-4. Настройка консоли `vESR`.[->](./settings_vesr_console/README.md)
+   
+4. Делаем внеполосное управление.[->](./mgmt/README.md)
+   
+6. Настройка консоли `vESR`.[->](./settings_vesr_console/README.md)
