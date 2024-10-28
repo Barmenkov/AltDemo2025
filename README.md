@@ -126,7 +126,6 @@ port ge1
   connect ip interface HQ-MGMT
 ```
 
-<img src="02.png" width='600'>
 
 Создаем GRE туннель
 
@@ -141,4 +140,97 @@ interface tunnel.1
 
 ```
 ip route 0.0.0.0/0 172.16.4.1
+```
+## HQ-SRV
+
+```
+echo "TYPE=eth
+DISABLED=no
+NM_CONTROLLED=no
+BOOTPROTO=static
+CONFIG_IPv4=yes" > /etc/net/ifaces/ens192/options
+```
+
+```
+echo 192.168.0.2/26 > /etc/net/ifaces/ens192/ipv4address
+```
+
+```
+echo default via 192.168.0.1 > /etc/net/ifaces/ens192/ipv4route
+```
+
+```
+systemctl restart network
+```
+
+## HQ-CLI
+
+Предварительно нужно настроить `DHCP-сервер` на `HQ-RTR` [->](../dhcp/README.md)
+
+<img src="04.png" width='600'>
+<img src="05.png" width='600'>
+<img src="06.png" width='600'>
+<img src="07.png" width='600'>
+
+Если все сработало, то в выводе `ip a` увидим следующее
+
+<img src="08.png" width='600'>
+
+## BR-RTR
+
+```
+configure
+
+interface gigabitethernet 1/0/1
+  ip firewall disable
+  ip address 172.16.5.2/28
+  no shutdown
+exit
+interface gigabitethernet 1/0/2
+  ip firewall disable
+  ip address 192.168.1.1/27
+  no shutdown
+exit
+tunnel gre 1
+  ttl 16
+  mtu 1400
+  ip firewall disable
+  local address 172.16.5.2
+  remote address 172.16.4.2
+  ip address 172.16.1.2/30
+  enable
+exit
+ip route 0.0.0.0/0 172.16.5.1
+
+commit
+confirm
+```
+## BR-SRV
+
+```
+echo "TYPE=eth
+DISABLED=no
+NM_CONTROLLED=no
+BOOTPROTO=static
+CONFIG_IPv4=yes" > /etc/net/ifaces/ens192/options
+```
+
+```
+echo 192.168.1.2/26 > /etc/net/ifaces/ens192/ipv4address
+```
+
+```
+echo default via 192.168.1.1 > /etc/net/ifaces/ens192/ipv4route
+```
+
+```
+echo nameserver 192.168.0.2 > /etc/net/ifaces/ens192/resolv.conf
+```
+
+```
+systemctl restart network
+```
+
+```
+ip address
 ```
