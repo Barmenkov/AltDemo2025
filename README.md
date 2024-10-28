@@ -167,14 +167,12 @@ systemctl restart network
 
 Предварительно нужно настроить `DHCP-сервер` на `HQ-RTR` [->](../dhcp/README.md)
 
-<img src="04.png" width='600'>
-<img src="05.png" width='600'>
-<img src="06.png" width='600'>
-<img src="07.png" width='600'>
-
+![image](https://github.com/user-attachments/assets/f34b9e68-c1a9-4f28-93ef-d588b3eac9b7)
+![image](https://github.com/user-attachments/assets/019b130b-2251-4719-a461-b46ae3ea22f3)
+![image](https://github.com/user-attachments/assets/3865e576-e667-4a92-a6a2-f5581e3dda88)
+![image](https://github.com/user-attachments/assets/ecc16e26-8cf4-4c6a-8185-d4492dad9bd6)
 Если все сработало, то в выводе `ip a` увидим следующее
-
-<img src="08.png" width='600'>
+![image](https://github.com/user-attachments/assets/8656855f-7c88-4055-b111-72dba4e8c575)
 
 ## BR-RTR
 
