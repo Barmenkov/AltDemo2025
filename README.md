@@ -261,8 +261,26 @@ systemctl restart network
 
 ## HQ-CLI
 
-Предварительно нужно настроить `DHCP-сервер` на `HQ-RTR` [->](../dhcp/README.md)
+Предварительно нужно настроить `DHCP-сервер` на `HQ-RTR`
+# Настройка DHCP на HQ-RTR (EcoRouter)
 
+```
+ip pool HQ-NET200 1
+ range 192.168.0.66-192.168.0.70
+!
+dhcp-server 1
+ lease 86400
+ mask 255.255.255.0
+ pool HQ-NET200 1
+  dns 192.168.0.2
+  domain-name au-team.irpo
+  gateway 192.168.0.65
+  mask 255.255.255.240
+!
+interface HQ-CLI
+ dhcp-server 1
+!
+```
 ![image](https://github.com/user-attachments/assets/f34b9e68-c1a9-4f28-93ef-d588b3eac9b7)
 ![image](https://github.com/user-attachments/assets/019b130b-2251-4719-a461-b46ae3ea22f3)
 ![image](https://github.com/user-attachments/assets/3865e576-e667-4a92-a6a2-f5581e3dda88)
