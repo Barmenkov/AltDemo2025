@@ -58,3 +58,87 @@ no shutdown
 commit
 confirm
 ```
+## HQ-RTR - EcoRouter
+
+Создаем сущность интерфейса и назначаем IP
+
+```
+int TO-ISP
+ip address 172.16.4.2/28
+no shutdown
+```
+
+Привязываем созданный интерфейс к физическому протоколу
+
+1. Заходим в `port ge0`
+2. Создаем service-instance `service-instance SI-ISP`
+3. Указываем, что кадры на этом интерфейсе будут без тега `encapsulation untagged`
+4. Привязываем сущьность интрефейса к порту `connect ip interface TO-ISP`
+
+```
+port ge0
+service-instance SI-ISP
+encapsulation untagged
+connect ip interface TO-ISP
+```
+
+Создаем интерфейсы, которые будут обрабатывать трафик vlan 100, 200, 999
+
+```
+interface HQ-SRV
+ ip mtu 1500
+ ip address 192.168.0.1/26
+!
+interface HQ-CLI
+ ip mtu 1500
+ ip address 192.168.0.65/28
+!
+interface HQ-MGMT
+ ip mtu 1500
+ ip address 192.168.0.81/29
+!
+```
+
+Заходим на порт и создаем для каждой `vlan` свой `service-instance`.
+
+1. Заходим в `port ge1`.
+2. Создаем service-instance `service-instance ge1/vlan100`
+3. Указываем инкапсуляцию для `100 vlan`
+4. Чтобы кадры из этого интерфейса выходили с тегом задаем настройку `rewrite pop 1`
+5. Привязываем сущьность интрефейса к порту `connect ip interface HQ-SRV`
+
+Проделываем эти действия для vlan 200 и 999
+
+```
+port ge1
+ mtu 9234
+ service-instance ge1/vlan100
+  encapsulation dot1q 100
+  rewrite pop 1
+  connect ip interface HQ-SRV
+ service-instance ge1/vlan200
+  encapsulation dot1q 200
+  rewrite pop 1
+  connect ip interface HQ-CLI
+ service-instance ge1/vlan999
+  encapsulation dot1q 999
+  rewrite pop 1
+  connect ip interface HQ-MGMT
+```
+
+<img src="02.png" width='600'>
+
+Создаем GRE туннель
+
+```
+interface tunnel.1
+ ip mtu 1400
+ ip address 172.16.1.1/30
+ ip tunnel 172.16.4.2 172.16.5.2 mode gre
+```
+
+Задаем маршрут по умолчанию в сторону ISP
+
+```
+ip route 0.0.0.0/0 172.16.4.1
+```
