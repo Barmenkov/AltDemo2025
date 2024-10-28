@@ -261,8 +261,7 @@ systemctl restart network
 
 ## HQ-CLI
 
-Предварительно нужно настроить `DHCP-сервер` на `HQ-RTR`
-# Настройка DHCP на HQ-RTR (EcoRouter)
+# Предварительно нужно настроить `DHCP-сервер` на `HQ-RTR`
 
 ```
 ip pool HQ-NET200 1
