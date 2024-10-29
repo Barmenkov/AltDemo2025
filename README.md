@@ -116,7 +116,7 @@ virtual-serial
 ```
 
 Перезагружаем устройство.
-# Задание 1.
+# Задание 1 - 2, 4. Произведите базовую настройку устройств. Настройка ISP. Настройте на интерфейсе HQ-RTR в сторону офиса HQ виртуальный коммутатор.
 ### 1.1. Настройте имена устройств согласно топологии. Используйте 
 полное доменное имя
 Alt Linux -
@@ -272,26 +272,6 @@ systemctl restart network
 ```
 
 ## HQ-CLI
-
-# Предварительно нужно настроить `DHCP-сервер` на `HQ-RTR`
-
-```
-ip pool HQ-NET200 1
- range 192.168.0.66-192.168.0.70
-!
-dhcp-server 1
- lease 86400
- mask 255.255.255.0
- pool HQ-NET200 1
-  dns 192.168.0.2
-  domain-name au-team.irpo
-  gateway 192.168.0.65
-  mask 255.255.255.240
-!
-interface HQ-CLI
- dhcp-server 1
-!
-```
 ![image](https://github.com/user-attachments/assets/f34b9e68-c1a9-4f28-93ef-d588b3eac9b7)
 ![image](https://github.com/user-attachments/assets/019b130b-2251-4719-a461-b46ae3ea22f3)
 ![image](https://github.com/user-attachments/assets/3865e576-e667-4a92-a6a2-f5581e3dda88)
@@ -356,4 +336,356 @@ systemctl restart network
 
 ```
 ip address
+```
+# Задание 3. Создание локальных учетных записей.
+## HQ-SRV и BR-SRV
+
+```
+useradd -m -u 1010 sshuser
+passwd sshuser
+```
+## HQ-RTR (EcoRouter)
+```
+conf t
+username net_admin
+password P@ssw0rd
+role admin
+activate
+```
+## BR-RTR (Eltex - vESR)
+
+```
+configure
+username net_admin
+password P@ssw0rd
+privilege 15
+end
+!
+commit
+confirm
+!
+```
+# Задание 5. Настройка безопасного удаленного доступа на серверах HQ-SRV и BR-SRV.
+# Настройка SSH на HQ-SRV и BR-SRV
+Делаем на всякий случай бэкап конфига:
+```
+cd /etc/openssh
+cp -a sshd_config sshd_config.bak
+```
+Редактируем файл конфигурации SSH сервера
+```
+nano sshd_config
+```
+Изменяем следующие параметры. Не забываем их раскоментировать. Если какой-то параметр не находиться, то просто добавьте его сами
+```
+Port 2024
+MaxAuthTries 3
+Banner /etc/openssh/banner
+AllowUsers sshuser
+```
+Создаем файл с баннером
+```
+nano /etc/openssh/banner
+```
+Вставляем в него следующие содержимое
+```
+WARNING!                     
+```
+Перезагружаем `SSH`
+```
+systemctl restart sshd
+```
+## Проверка
+![image](https://github.com/user-attachments/assets/42c68fa2-4c7f-4680-8668-636a7c9f66a3)
+# Задание 6-7. Между офисами HQ и BR необходимо сконфигурировать IP туннель. Обеспечьте динамическую маршрутизацию: ресурсы одного офиса должны быть доступны из другого офиса. Для обеспечения динамической маршрутизации используйте link state протокол на ваше усмотрение.
+# Настраиваем OSPF
+## HQ-RTR
+```
+router ospf 1
+ network 172.16.1.0 0.0.0.3 area 0.0.0.0
+ network 192.168.0.0 0.0.0.255 area 0.0.0.0
+!
+interface tunnel.1
+ ip ospf authentication message-digest
+ ip ospf message-digest-key 1 md5 Demo2025
+ ip ospf network point-to-point
+```
+## BR-RTR
+```
+key-chain ospfkey
+  key 1
+    key-string ascii-text Demo2025
+  exit
+exit
+router ospf 1
+  area 0.0.0.0
+    enable
+  exit
+  enable
+exit
+
+interface gigabitethernet 1/0/2
+  ip ospf instance 1
+  ip ospf
+exit
+tunnel gre 1
+  ip ospf instance 1
+  ip ospf network point-to-point
+  ip ospf authentication key-chain ospfkey
+  ip ospf authentication algorithm md5
+  ip ospf
+exit
+
+commit
+confirm
+```
+### HQ-RTR
+
+```
+sh ip ospf neighbor 
+sh ip ospf interface brief
+sh ip route
+```
+### BR-RTR
+```
+sh ip ospf neighbor
+sh ip route
+```
+```
+sh ip ospf interface
+```
+# Задание 8, 10. Настройка динамической трансляции адресов. Настройка DNS для офисов HQ и BR.
+# Настройка DNS с помощью bind
+## HQ-SRV
+Устанавливаем bind:
+```
+apt-get install bind bind-utils
+```
+Редактируем конфиг:
+```
+nano  /var/lib/bind/etc/options.conf
+```
+Изменяем следующие параметры
+![image](https://github.com/user-attachments/assets/38a756b6-3a5c-42df-ac66-4c953e208a8f)
+![image](https://github.com/user-attachments/assets/8bba4086-d734-4bac-8052-d3a8be149eb7)
+Проверяем на ошибки
+```
+named-checkconf
+```
+Если появилась вот такая ошибка:
+![image](https://github.com/user-attachments/assets/2a954e7b-ec68-4532-84aa-5b06ce785cec)
+
+Нужно скофигураровать ключи с помощью `rndc-confgen`
+![image](https://github.com/user-attachments/assets/c83df0c4-ea06-4e70-ade6-dddfd7db4f3a)
+
+
+Редактируем файл `var/lib/bind/etc/rndc.key `
+```
+nano /var/lib/bind/etc/rndc.key 
+```
+Встравляем в него ключ, который получили при помощи `rndc-confgen`
+
+![image](https://github.com/user-attachments/assets/3f5be9e1-9828-4b3a-9fb5-5e9c6c03d713)
+
+Проверяем на ошибки
+```
+named-checkconf
+```
+Если ошибок нет, то запускаем `bind`
+```
+systemctl enable --now bind
+```
+Проверяем что `bind` работает
+```
+systemctl status bind
+```
+![image](https://github.com/user-attachments/assets/803f3c2f-0535-4a2b-846c-2589bc13ed92)
+
+Редактируем `resolv.conf`
+
+```
+nano /etc/net/ifaces/ens192/resolv.conf 
+```
+```
+search au-team.irpo
+nameserver 127.0.0.1
+nameserver 192.168.0.2
+nameserver 77.88.8.8
+```
+Перезагружаем сеть
+```
+systemctl restart network
+```
+Проверяем
+```
+dig ya.ru
+```
+### Создаем зону прямого просмотра
+```
+nano  /var/lib/bind/etc/local.conf
+```
+```
+zone "au-team.irpo" {
+        type master;
+        file "au-team.irpo.db";
+};
+```
+Создаем копию файла-шаблона прямой зоны `/var/lib/bind/etc/zone/localdomain`
+```
+# cp /var/lib/bind/etc/zone/localdomain  /var/lib/bind/etc/zone/au-team.irpo.db
+```
+Задаем права на файл
+```
+chown named. /var/lib/bind/etc/zone/au-team.irpo.db
+
+chmod 600 /var/lib/bind/etc/zone/au-team.irpo.db
+```
+Открываем для редактирования
+
+```
+nano /var/lib/bind/etc/zone/au-team.irpo.db
+```
+```
+$TTL    1D
+@       IN      SOA     au-team.irpo. root.au-team.irpo. (
+                                2024102200      ; serial
+                                12H             ; refresh
+                                1H              ; retry
+                                1W              ; expire
+                                1H              ; ncache
+                        )
+        IN      NS      au-team.irpo.
+        IN      A       192.168.0.2
+hq-rtr  IN      A       192.168.0.1
+br-rtr  IN      A       192.168.1.1
+hq-srv  IN      A       192.168.0.2
+hq-cli  IN      A       192.168.0.66
+br-srv  IN      A       192.168.1.2
+moodle  IN      CNAME   hq-rtr
+wiki    IN      CNAME   hq-rtr
+```
+
+Проверяем, что зона настроена Предварительно
+
+```
+named-checkconf -z
+```
+Перезагружаем `bind`
+```
+systemctl restart bind
+```
+Проверяем
+```
+dig hq-srv.au-team.irpo
+```
+### Создаем зону обратного просмотра и PTR записи
+
+```
+nano  /var/lib/bind/etc/local.conf
+```
+```
+zone "0.168.192.in-addr.arpa" {
+        type master;
+        file "au-team.irpo_rev.db";
+};
+```
+
+Копируем шаблон файла
+
+```
+cp /var/lib/bind/etc/zone/{127.in-addr.arpa,au-team.irpo_rev.db}
+```
+
+Задаем права на файл
+```
+chown named. /var/lib/bind/etc/zone/au-team.irpo_rev.db
+
+chmod 600 /var/lib/bind/etc/zone/au-team.irpo_rev.db
+```
+Открываем для редактирования
+
+```
+nano /var/lib/bind/etc/zone/au-team.irpo_rev.db
+```
+Вставляем в него следующее содержимое.
+
+```
+$TTL    1D
+@       IN      SOA     au-team.irpo. root.au-team.irpo. (
+                                2024102200      ; serial
+                                12H             ; refresh
+                                1H              ; retry
+                                1W              ; expire
+                                1H              ; ncache
+                        )
+        IN      NS      au-team.irpo.
+1       IN      PTR     hq-rtr.au-team.irpo.
+2       IN      PTR     hq-srv.au-team.irpo.
+66      IN      PTR     hq-cli.au-team.irpo.
+```
+
+Проверяем
+
+```
+named-checkconf -z
+```
+Перезагружаем `bind`
+
+```
+systemctl restart bind
+```
+Проверяем
+```
+dig -x 192.168.0.2
+```
+### Комплекская проверка с HQ-CLI
+![image](https://github.com/user-attachments/assets/0eb7c2dd-789a-45b6-93f8-6d81ba14d2dc)
+
+# Задание 9. Настройка протокола динамической конфигурации хостов.
+ip pool HQ-NET200 1
+ range 192.168.0.66-192.168.0.70
+!
+dhcp-server 1
+ lease 86400
+ mask 255.255.255.0
+ pool HQ-NET200 1
+  dns 192.168.0.2
+  domain-name au-team.irpo
+  gateway 192.168.0.65
+  mask 255.255.255.240
+!
+interface HQ-CLI
+ dhcp-server 1
+!
+# Задание 11. Настройте часовой пояс на всех устройствах, согласно месту проведения экзамена
+# Настройка часового пояса
+## HQ-SRV, HQ-CLI, BR-SRV
+Проверяем какой часовой пояс установлен
+```
+timedatectl status
+```
+Если отличается, то устанавливаем
+```
+timedatectl set-timezone Asia/Yekaterinburg
+```
+## HQ-RTR (EcoRouter)
+```
+conf t
+ntp timezone utc+5
+```
+Проверяем:
+```
+show ntp timezone
+```
+## BR-RTR (Eltex)
+```
+configure
+clock timezone gmt +5
+end
+commit
+confirm
+```
+Проверяем:
+```
+show date
 ```
