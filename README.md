@@ -9,21 +9,6 @@
 | HQ-SRV | 2 | 1 | 10 | «ALT-server» |
 | BR-SRV | 2 | 1 | 10 | «ALT-server» |
 | HQ-CLI | 3 | 2 | 15 | «ALT-workstatison» |
-### EcoRouter
-Установка `EcoRouter`
-Имеем образ EcoRouter в qcow2 формате.
-
-Шаг 1. Конвертируем qcow2 в vmdk
-
-Используем qumu-img скачать можно [здесь](https://cloudbase.it/downloads/qemu-img-win-x64-2_3_0.zip)
-
-ipv6.qcow2 - имя файла образа EcoRouter в формате qcow2
-
-ipv6.vmdk - имя файла результата конвертации образа EcoRouter (может быть любым) 
-
-```
-qemu-img.exe convert -f qcow2 ipv6.qcow2 -O vmdk ipv6.vmdk
-```
 ### vESR
 Установка `vESR`
 Предвариетльно нужно получить `ISO` образ `vESR`. Это можно сделать на оффсайте `ELTEX` по запросу или просто загуглить.
